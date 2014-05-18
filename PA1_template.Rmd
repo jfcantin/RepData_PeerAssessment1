@@ -1,6 +1,7 @@
 # Reproducible Research: Peer Assessment 1
 
 ```{r "Initialization"}
+rm(list=ls()) # clean up environment to reduce side effects
 library(lubridate)
 library(data.table)
 library(ggplot2)
@@ -16,15 +17,30 @@ activityFileName <- "activity.csv"
 activities <- read.csv(unz(zipfile, activityFileName))
 activities$date <- ymd(activities$date)
 
+convertIntervalToHourMinutes <- function(interval){
+    hoursOnly <- interval %/% 100
+    minutesOnly <- interval - (hoursOnly * 100)
+    
+    return(hm(paste(hoursOnly, minutesOnly, sep=":")))
+}
+
+dateTimeInterval <- activities$date + convertIntervalToHourMinutes(activities$interval)
+activities <- cbind(activities, dateTimeInterval)
+summary(activities)
+
+activities.dt <- as.data.table(activities)
+
 ```
 
 ## What is mean total number of steps taken per day?
 ```{r "steps per day"}
-activities.dt <- as.data.table(activities)
 
 totalStepsPerDay <- activities.dt[!is.na(steps),list(totalSteps=sum(steps)), by=date]
 summary(totalStepsPerDay)
 
+# TODO:
+    # add title and proper axis titles
+    # maybe convert totals to table?
 #hist(totalStepsPerDay[,totalSteps], breaks="FD")
 breaks <- pretty(range(totalStepsPerDay[,totalSteps],na.rm=TRUE), n = nclass.FD(totalStepsPerDay[,totalSteps]), min.n = 1)
 g <- ggplot(totalStepsPerDay, aes(x=totalSteps))
@@ -40,6 +56,17 @@ totalStepsPerDay[,list(
 ## What is the average daily activity pattern?
 
 ```{r "Average daily activity"}
+
+averageStepsPerInterval <- activities.dt[!is.na(steps),list(averageSteps=mean(steps)), by=interval]
+with(averageStepsPerInterval, plot(interval, averageSteps, type="l"))
+
+g <- ggplot(averageStepsPerInterval, aes(interval, averageSteps))
+g + geom_line()
+
+
+# interval with the maximum average number of steps
+maxAverageNumberOfSteps <- max(averageStepsPerInterval[,averageSteps])
+averageStepsPerInterval[averageSteps == maxAverageNumberOfSteps,interval]
 
 ```
 

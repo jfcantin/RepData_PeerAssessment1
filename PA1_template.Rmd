@@ -2,6 +2,7 @@
 
 ```{r "Initialization"}
 rm(list=ls()) # clean up environment to reduce side effects
+# no need to do anything about echo since the default is TRUE
 library(lubridate)
 library(data.table)
 library(ggplot2)
@@ -35,44 +36,70 @@ activities.dt <- as.data.table(activities)
 ## What is mean total number of steps taken per day?
 ```{r "steps per day"}
 
-totalStepsPerDay <- activities.dt[!is.na(steps),list(totalSteps=sum(steps)), by=date]
-summary(totalStepsPerDay)
+totalStepsPerDay <- activities.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
 
 # TODO:
     # add title and proper axis titles
     # maybe convert totals to table?
-#hist(totalStepsPerDay[,totalSteps], breaks="FD")
-breaks <- pretty(range(totalStepsPerDay[,totalSteps],na.rm=TRUE), n = nclass.FD(totalStepsPerDay[,totalSteps]), min.n = 1)
 g <- ggplot(totalStepsPerDay, aes(x=totalSteps))
-g <- g + geom_histogram(breaks=breaks)
+g <- g + geom_histogram(binwidth=2000)
 g + geom_rug() 
 
 # mean and median total steps per day
-totalStepsPerDay[,list(
+totals <- totalStepsPerDay[,list(
     mean=mean(totalSteps), 
     median=median(totalSteps))]
 ```
+
+- The mean step per day is **`r totals$mean`**
+- The median step per day is **`r totals$median`**
 
 ## What is the average daily activity pattern?
 
 ```{r "Average daily activity"}
 
-averageStepsPerInterval <- activities.dt[!is.na(steps),list(averageSteps=mean(steps)), by=interval]
-with(averageStepsPerInterval, plot(interval, averageSteps, type="l"))
+avgStepsPerInterval <- activities.dt[,list(averageSteps=mean(steps,na.rm=TRUE)), by=interval]
 
-g <- ggplot(averageStepsPerInterval, aes(interval, averageSteps))
+g <- ggplot(avgStepsPerInterval, aes(interval, averageSteps))
 g + geom_line()
 
 
 # interval with the maximum average number of steps
-maxAverageNumberOfSteps <- max(averageStepsPerInterval[,averageSteps])
-averageStepsPerInterval[averageSteps == maxAverageNumberOfSteps,interval]
-
+maxAverageNumberOfSteps <- max(avgStepsPerInterval$averageSteps)
+result <- avgStepsPerInterval[averageSteps == maxAverageNumberOfSteps,interval]
 ```
+- The interval with the biggest average number of step is **`r result`**
 
 
 ## Imputing missing values
+The number of missing steps in the dataset is : **`r nrow(activities.dt[is.na(steps)])`**
 
+### Filling missing values
+Strategy being used:
+Take the mean step of each interval to replace the missing values.
+```{r "Filling missing values"}
+nomissing.dt <- activities.dt
+nomissing.dt[is.na(steps), steps := avgStepsPerInterval[avgStepsPerInterval$interval == interval,averageSteps]]
+```
 
+```{r "Steps per day no NA"}
+
+totalStepsPerDay.noNA <- activities.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
+
+# TODO:
+    # add title and proper axis titles
+    # maybe convert totals to table?
+g <- ggplot(totalStepsPerDay.noNA, aes(x=totalSteps))
+g <- g + geom_histogram(bidwidth=2000)
+g + geom_rug() 
+
+# mean and median total steps per day
+totals.noNA <- totalStepsPerDay[,list(
+    mean=mean(totalSteps), 
+    median=median(totalSteps))]
+```
+
+- The mean step per day without NA is `r totals.noNA$mean`
+- The median step per day without NA is `r totals.noNA$median`
 
 ## Are there differences in activity patterns between weekdays and weekends?

@@ -1,16 +1,47 @@
 # Reproducible Research: Peer Assessment 1
 
+```{r "Initialization"}
+library(lubridate)
+library(data.table)
+library(ggplot2)
+
+```
+
 
 ## Loading and preprocessing the data
+```{r "Loading"}
+zipfile <- "activity.zip"
+activityFileName <- "activity.csv"
 
+activities <- read.csv(unz(zipfile, activityFileName))
+activities$date <- ymd(activities$date)
 
+```
 
 ## What is mean total number of steps taken per day?
+```{r "steps per day"}
+activities.dt <- as.data.table(activities)
 
+totalStepsPerDay <- activities.dt[!is.na(steps),list(totalSteps=sum(steps)), by=date]
+summary(totalStepsPerDay)
 
+#hist(totalStepsPerDay[,totalSteps], breaks="FD")
+breaks <- pretty(range(totalStepsPerDay[,totalSteps],na.rm=TRUE), n = nclass.FD(totalStepsPerDay[,totalSteps]), min.n = 1)
+g <- ggplot(totalStepsPerDay, aes(x=totalSteps))
+g <- g + geom_histogram(breaks=breaks)
+g + geom_rug() 
+
+# mean and median total steps per day
+totalStepsPerDay[,list(
+    mean=mean(totalSteps), 
+    median=median(totalSteps))]
+```
 
 ## What is the average daily activity pattern?
 
+```{r "Average daily activity"}
+
+```
 
 
 ## Imputing missing values

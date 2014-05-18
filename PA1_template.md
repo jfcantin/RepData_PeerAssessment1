@@ -91,8 +91,8 @@ totals <- totalStepsPerDay[, list(mean = mean(totalSteps), median = median(total
 ```
 
 
-- The mean step per day is 9354.2295
-- The median step per day is 10395
+- The mean step per day is **9354.2295**
+- The median step per day is **10395**
 
 ## What is the average daily activity pattern?
 
@@ -116,7 +116,7 @@ maxAverageNumberOfSteps <- max(avgStepsPerInterval$averageSteps)
 result <- avgStepsPerInterval[averageSteps == maxAverageNumberOfSteps, interval]
 ```
 
-The interval with the biggest average number of step is 835
+- The interval with the biggest average number of step is **835**
 
 
 ## Imputing missing values
@@ -128,8 +128,8 @@ Take the mean step of each interval to replace the missing values.
 
 ```r
 nomissing.dt <- activities.dt
-nomissing.dt[is.na(steps), `:=`(steps, avgStepsPerInterval[avgStepsPerInterval$interval == 
-    interval, averageSteps])]
+nomissing.dt[is.na(steps), `:=`(steps, round(avgStepsPerInterval[avgStepsPerInterval$interval == 
+    interval, averageSteps]))]
 ```
 
 ```
@@ -144,15 +144,15 @@ nomissing.dt[is.na(steps), `:=`(steps, avgStepsPerInterval[avgStepsPerInterval$i
 
 ```
 ##        steps       date interval    dateTimeInterval
-##     1:     1 2012-10-01        0 2012-10-01 00:00:00
+##     1:     2 2012-10-01        0 2012-10-01 00:00:00
 ##     2:     0 2012-10-01        5 2012-10-01 00:05:00
 ##     3:     0 2012-10-01       10 2012-10-01 00:10:00
 ##     4:     0 2012-10-01       15 2012-10-01 00:15:00
 ##     5:     0 2012-10-01       20 2012-10-01 00:20:00
 ##    ---                                              
-## 17564:     4 2012-11-30     2335 2012-11-30 23:35:00
+## 17564:     5 2012-11-30     2335 2012-11-30 23:35:00
 ## 17565:     3 2012-11-30     2340 2012-11-30 23:40:00
-## 17566:     0 2012-11-30     2345 2012-11-30 23:45:00
+## 17566:     1 2012-11-30     2345 2012-11-30 23:45:00
 ## 17567:     0 2012-11-30     2350 2012-11-30 23:50:00
 ## 17568:     1 2012-11-30     2355 2012-11-30 23:55:00
 ```
@@ -161,15 +161,17 @@ nomissing.dt[is.na(steps), `:=`(steps, avgStepsPerInterval[avgStepsPerInterval$i
 
 ```r
 
-totalStepsPerDay.noNA <- activities.dt[, list(totalSteps = sum(steps, na.rm = TRUE)), 
+totalStepsPerDay.noNA <- nomissing.dt[, list(totalSteps = sum(steps, na.rm = TRUE)), 
     by = date]
 
 # TODO: add title and proper axis titles maybe convert totals to table?
-breaks <- pretty(range(totalStepsPerDay.noNA$totalSteps, na.rm = TRUE), n = nclass.FD(totalStepsPerDay.noNA$totalSteps), 
-    min.n = 1)
 g <- ggplot(totalStepsPerDay.noNA, aes(x = totalSteps))
-g <- g + geom_histogram(breaks = breaks)
+g <- g + geom_histogram(bidwidth = 2000)
 g + geom_rug()
+```
+
+```
+## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
 ```
 
 ![plot of chunk Steps per day no NA](figure/Steps_per_day_no_NA.png) 
@@ -177,15 +179,14 @@ g + geom_rug()
 ```r
 
 # mean and median total steps per day
-totals.noNA <- totalStepsPerDay[, list(mean = mean(totalSteps), median = median(totalSteps))]
+totals.noNA <- totalStepsPerDay.noNA[, list(mean = mean(totalSteps), median = median(totalSteps))]
 ```
 
 
-- The mean step per day without NA is 9354.2295
-- The median step per day without NA is 10395
-
-
-
-
+- The mean step per day without NA is 1.0766 &times; 10<sup>4</sup>
+- The median step per day without NA is 10762
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+

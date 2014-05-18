@@ -79,22 +79,22 @@ Strategy being used:
 Take the mean step of each interval to replace the missing values.
 ```{r "Filling missing values"}
 nomissing.dt <- activities.dt
-nomissing.dt[is.na(steps), steps := avgStepsPerInterval[avgStepsPerInterval$interval == interval,averageSteps]]
+nomissing.dt[is.na(steps), steps := as.integer(avgStepsPerInterval[avgStepsPerInterval$interval == interval,averageSteps])]
 ```
 
 ```{r "Steps per day no NA"}
 
-totalStepsPerDay.noNA <- activities.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
+totalStepsPerDay.noNA <- nomissing.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
 
 # TODO:
     # add title and proper axis titles
     # maybe convert totals to table?
 g <- ggplot(totalStepsPerDay.noNA, aes(x=totalSteps))
-g <- g + geom_histogram(bidwidth=2000)
+g <- g + geom_histogram(binwidth=2000)
 g + geom_rug() 
 
 # mean and median total steps per day
-totals.noNA <- totalStepsPerDay[,list(
+totals.noNA <- totalStepsPerDay.noNA[,list(
     mean=mean(totalSteps), 
     median=median(totalSteps))]
 ```
@@ -103,3 +103,18 @@ totals.noNA <- totalStepsPerDay[,list(
 - The median step per day without NA is `r totals.noNA$median`
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r "prepare data.table"}
+getWeekDayType <- function(date){
+    ifelse(wday %in% c(1,7),"weekday", "weekend")
+}
+
+nomissing.dt[, weekDayType := as.factor(getWeekDayType(date))]
+a$weekDayType <- as.factor(a$weekDayType)
+
+nomissing.avgSteps<- nomissing.dt[,list(averageSteps=mean(steps,na.rm=TRUE)), by=list(weekDayType,interval)]
+
+g <- ggplot(nomissing.avgSteps, aes(interval, averageSteps))
+g <- g + geom_line()
+g + facet_grid(weekDayType ~ .)
+```
+

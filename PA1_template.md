@@ -128,31 +128,21 @@ Take the mean step of each interval to replace the missing values.
 
 ```r
 nomissing.dt <- activities.dt
-nomissing.dt[is.na(steps), `:=`(steps, round(avgStepsPerInterval[avgStepsPerInterval$interval == 
+nomissing.dt[is.na(steps), `:=`(steps, as.integer(avgStepsPerInterval[avgStepsPerInterval$interval == 
     interval, averageSteps]))]
 ```
 
 ```
-## Warning: Coerced 'double' RHS to 'integer' to match the column's type; may
-## have truncated precision. Either change the target column to 'double'
-## first (by creating a new 'double' vector length 17568 (nrows of entire
-## table) and assign that; i.e. 'replace' column), or coerce RHS to 'integer'
-## (e.g. 1L, NA_[real|integer]_, as.*, etc) to make your intent clear and for
-## speed. Or, set the column type correctly up front when you create the
-## table and stick to it, please.
-```
-
-```
 ##        steps       date interval    dateTimeInterval
-##     1:     2 2012-10-01        0 2012-10-01 00:00:00
+##     1:     1 2012-10-01        0 2012-10-01 00:00:00
 ##     2:     0 2012-10-01        5 2012-10-01 00:05:00
 ##     3:     0 2012-10-01       10 2012-10-01 00:10:00
 ##     4:     0 2012-10-01       15 2012-10-01 00:15:00
 ##     5:     0 2012-10-01       20 2012-10-01 00:20:00
 ##    ---                                              
-## 17564:     5 2012-11-30     2335 2012-11-30 23:35:00
+## 17564:     4 2012-11-30     2335 2012-11-30 23:35:00
 ## 17565:     3 2012-11-30     2340 2012-11-30 23:40:00
-## 17566:     1 2012-11-30     2345 2012-11-30 23:45:00
+## 17566:     0 2012-11-30     2345 2012-11-30 23:45:00
 ## 17567:     0 2012-11-30     2350 2012-11-30 23:50:00
 ## 17568:     1 2012-11-30     2355 2012-11-30 23:55:00
 ```
@@ -166,12 +156,8 @@ totalStepsPerDay.noNA <- nomissing.dt[, list(totalSteps = sum(steps, na.rm = TRU
 
 # TODO: add title and proper axis titles maybe convert totals to table?
 g <- ggplot(totalStepsPerDay.noNA, aes(x = totalSteps))
-g <- g + geom_histogram(bidwidth = 2000)
+g <- g + geom_histogram(binwidth = 2000)
 g + geom_rug()
-```
-
-```
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
 ```
 
 ![plot of chunk Steps per day no NA](figure/Steps_per_day_no_NA.png) 
@@ -183,10 +169,57 @@ totals.noNA <- totalStepsPerDay.noNA[, list(mean = mean(totalSteps), median = me
 ```
 
 
-- The mean step per day without NA is 1.0766 &times; 10<sup>4</sup>
-- The median step per day without NA is 10762
+- The mean step per day without NA is 1.075 &times; 10<sup>4</sup>
+- The median step per day without NA is 10641
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+```r
+getWeekDayType <- function(date) {
+    ifelse(wday %in% c(1, 7), "weekday", "weekend")
+}
+
+nomissing.dt[, `:=`(weekDayType, as.factor(getWeekDayType(date)))]
+```
+
+```
+## Error: 'match' requires vector arguments
+```
+
+```r
+a$weekDayType <- as.factor(a$weekDayType)
+```
+
+```
+## Error: object 'a' not found
+```
+
+```r
+
+nomissing.avgSteps <- nomissing.dt[, list(averageSteps = mean(steps, na.rm = TRUE)), 
+    by = list(weekDayType, interval)]
+```
+
+```
+## Error: object 'weekDayType' not found
+```
+
+```r
+
+g <- ggplot(nomissing.avgSteps, aes(interval, averageSteps))
+```
+
+```
+## Error: object 'nomissing.avgSteps' not found
+```
+
+```r
+g <- g + geom_line()
+g + facet_grid(weekDayType ~ .)
+```
+
+```
+## Error: At least one layer must contain all variables used for facetting
+```
 
 

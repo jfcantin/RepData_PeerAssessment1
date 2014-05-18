@@ -1,120 +1,121 @@
 # Reproducible Research: Peer Assessment 1
 
-```{r "Initialization"}
-rm(list=ls()) # clean up environment to reduce side effects
-# no need to do anything about echo since the default is TRUE
-library(lubridate)
-library(data.table)
-library(ggplot2)
+Project information can be found in the README.md in the same directory as this file.
 
+```{r "Set Knitr options"}
+opts_chunk$set(echo=TRUE) # technically not necessary since the default is TRUE
 ```
 
+Let's initialize with the packages required for the analysis
+```{r "Initialization"}
+rm(list=ls()) # clean up environment when not using knitr to reduce side effects
+library(ggplot2)
+library(lubridate)
+library(data.table)
+```
 
 ## Loading and preprocessing the data
-```{r "Loading"}
+Provided activity.zip file in the repository is read an converted to a data.table
+```{r "Loading and preprocessing"}
 zipfile <- "activity.zip"
 activityFileName <- "activity.csv"
 
 activities <- read.csv(unz(zipfile, activityFileName))
-activities$date <- ymd(activities$date)
-
-convertIntervalToHourMinutes <- function(interval){
-    hoursOnly <- interval %/% 100
-    minutesOnly <- interval - (hoursOnly * 100)
-    
-    return(hm(paste(hoursOnly, minutesOnly, sep=":")))
-}
-
-dateTimeInterval <- activities$date + convertIntervalToHourMinutes(activities$interval)
-activities <- cbind(activities, dateTimeInterval)
-summary(activities)
+activities$date <- ymd(activities$date) # reclassify factor as date
 
 activities.dt <- as.data.table(activities)
+```
 
+Overview of the data.table we just read:
+```{r}
+summary(activities.dt)
+str(activities.dt)
+head(activities.dt)
 ```
 
 ## What is mean total number of steps taken per day?
+First we need to calculate the total number of steps per day.
 ```{r "steps per day"}
-
 totalStepsPerDay <- activities.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
+summary(totalStepsPerDay)
 
-# TODO:
-    # add title and proper axis titles
-    # maybe convert totals to table?
 g <- ggplot(totalStepsPerDay, aes(x=totalSteps))
-g <- g + geom_histogram(binwidth=2000)
+g <- g + geom_histogram(binwidth=2000, color="lightgray")
+g <- g + labs(title= "Histogram Of The Total Number Of Steps Per Day")
+g <- g + labs(x= "Total Number Of Steps Per Day")
 g + geom_rug() 
 
 # mean and median total steps per day
-totals <- totalStepsPerDay[,list(
+totalStepsPerDay[,list(
     mean=mean(totalSteps), 
     median=median(totalSteps))]
 ```
 
-- The mean step per day is **`r totals$mean`**
-- The median step per day is **`r totals$median`**
-
 ## What is the average daily activity pattern?
-
+In this section we are looking at the data summarized at the interval level
 ```{r "Average daily activity"}
-
 avgStepsPerInterval <- activities.dt[,list(averageSteps=mean(steps,na.rm=TRUE)), by=interval]
+head(avgStepsPerInterval)
+```
 
+```{r "plot of average steps per interval"}
 g <- ggplot(avgStepsPerInterval, aes(interval, averageSteps))
-g + geom_line()
+g <- g + geom_line()
+g + labs(title="Average Daily Activity Pattern", y = "Number of Steps")
+```
 
-
-# interval with the maximum average number of steps
+We can now find the interval with the maximum average number of steps
+```{r}
 maxAverageNumberOfSteps <- max(avgStepsPerInterval$averageSteps)
 result <- avgStepsPerInterval[averageSteps == maxAverageNumberOfSteps,interval]
 ```
-- The interval with the biggest average number of step is **`r result`**
-
+The interval with the biggest average number of step is **`r result`**
 
 ## Imputing missing values
 The number of missing steps in the dataset is : **`r nrow(activities.dt[is.na(steps)])`**
 
 ### Filling missing values
-Strategy being used:
-Take the mean step of each interval to replace the missing values.
+Strategy being used:  
+Take the previously calculated mean number of steps for a given interval to replace the missing values.
 ```{r "Filling missing values"}
 nomissing.dt <- activities.dt
 nomissing.dt[is.na(steps), steps := as.integer(avgStepsPerInterval[avgStepsPerInterval$interval == interval,averageSteps])]
 ```
 
+Let's now create the same histogram from above with the missing values filled.
 ```{r "Steps per day no NA"}
-
 totalStepsPerDay.noNA <- nomissing.dt[,list(totalSteps=sum(steps, na.rm=TRUE)), by=date]
+summary(totalStepsPerDay.noNA)
 
-# TODO:
-    # add title and proper axis titles
-    # maybe convert totals to table?
 g <- ggplot(totalStepsPerDay.noNA, aes(x=totalSteps))
-g <- g + geom_histogram(binwidth=2000)
+g <- g + geom_histogram(binwidth=2000, color="lightgray")
+g <- g + labs(title= "Histogram Of The Total Number Of Steps Per Day (Without NA)")
+g <- g + labs(x= "Total Number Of Steps Per Day")
 g + geom_rug() 
 
-# mean and median total steps per day
-totals.noNA <- totalStepsPerDay.noNA[,list(
+# mean and median total steps per day without missing values
+totalStepsPerDay.noNA[,list(
     mean=mean(totalSteps), 
     median=median(totalSteps))]
 ```
 
-- The mean step per day without NA is `r totals.noNA$mean`
-- The median step per day without NA is `r totals.noNA$median`
+It appears that filling the missing values have removed a lot of the `0` and moved the mean and median to the right. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+First we create our WeekDayType factor to be added to the data.table without missing values. Then the mean is calculated for each WeekDayType - Interval combination. 
 ```{r "prepare data.table"}
 getWeekDayType <- function(date){
-    ifelse(wday %in% c(1,7),"weekday", "weekend")
+    ifelse(wday(date) %in% c(1,7),"weekday", "weekend")
 }
 
 nomissing.dt[, weekDayType := as.factor(getWeekDayType(date))]
-a$weekDayType <- as.factor(a$weekDayType)
 
 nomissing.avgSteps<- nomissing.dt[,list(averageSteps=mean(steps,na.rm=TRUE)), by=list(weekDayType,interval)]
 
 g <- ggplot(nomissing.avgSteps, aes(interval, averageSteps))
 g <- g + geom_line()
+g <- g + labs(title="Differences in Daily Activity Between Weekdays and Weekends")
+g <- g + labs(y="Number of Steps")
 g + facet_grid(weekDayType ~ .)
 ```
 

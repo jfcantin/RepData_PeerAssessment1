@@ -206,9 +206,15 @@ library(data.table)
 
 <p>Provided activity.zip file in the repository is read an converted to a data.table</p>
 
-<pre><code class="r">zipfile &lt;- &quot;activity.zip&quot;
+<pre><code class="r">fileUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;
+zipfile &lt;- &quot;data//activity.zip&quot;
 activityFileName &lt;- &quot;activity.csv&quot;
-
+if (!file.exists(&quot;data&quot;)) {
+    dir.create(&quot;data&quot;)
+}
+if (!file.exists(zipfile)) {
+    download.file(fileUrl, zipfile, method = &quot;curl&quot;)
+}
 activities &lt;- read.csv(unz(zipfile, activityFileName))
 activities$date &lt;- ymd(activities$date)  # reclassify factor as date
 

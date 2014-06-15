@@ -31,9 +31,15 @@ library(data.table)
 Provided activity.zip file in the repository is read an converted to a data.table
 
 ```r
-zipfile <- "activity.zip"
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+zipfile <- "data//activity.zip"
 activityFileName <- "activity.csv"
-
+if (!file.exists("data")) {
+    dir.create("data")
+}
+if (!file.exists(zipfile)) {
+    download.file(fileUrl, zipfile, method = "curl")
+}
 activities <- read.csv(unz(zipfile, activityFileName))
 activities$date <- ymd(activities$date)  # reclassify factor as date
 

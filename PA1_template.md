@@ -28,7 +28,7 @@ library(data.table)
 
 
 ## Loading and preprocessing the data
-Provided activity.zip file in the repository is read an converted to a data.table
+#### Download activity.zip file if not in data folder. 
 
 ```r
 fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
@@ -40,6 +40,12 @@ if (!file.exists("data")) {
 if (!file.exists(zipfile)) {
     download.file(fileUrl, zipfile, method = "curl")
 }
+```
+
+
+#### Read activity file and prepare for analysis
+
+```r
 activities <- read.csv(unz(zipfile, activityFileName))
 activities$date <- ymd(activities$date)  # reclassify factor as date
 
@@ -47,7 +53,16 @@ activities.dt <- as.data.table(activities)
 ```
 
 
-Overview of the data.table we just read:
+
+#### Overview of the data.table we just read:
+
+```r
+dim(activities.dt)
+```
+
+```
+## [1] 17568     3
+```
 
 ```r
 summary(activities.dt)
@@ -62,18 +77,6 @@ summary(activities.dt)
 ##  3rd Qu.: 12.0   3rd Qu.:2012-11-15   3rd Qu.:1766  
 ##  Max.   :806.0   Max.   :2012-11-30   Max.   :2355  
 ##  NA's   :2304
-```
-
-```r
-str(activities.dt)
-```
-
-```
-## Classes 'data.table' and 'data.frame':	17568 obs. of  3 variables:
-##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
-##  $ date    : POSIXct, format: "2012-10-01" "2012-10-01" ...
-##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
-##  - attr(*, ".internal.selfref")=<externalptr>
 ```
 
 ```r
@@ -92,7 +95,8 @@ head(activities.dt)
 
 
 ## What is mean total number of steps taken per day?
-First we need to calculate the total number of steps per day.
+
+#### Calculate the total number of steps per day.
 
 ```r
 totalStepsPerDay <- activities.dt[, list(totalSteps = sum(steps, na.rm = TRUE)), 
@@ -121,9 +125,10 @@ g + geom_rug()
 
 ![plot of chunk steps per day](figure/steps_per_day.png) 
 
-```r
 
-# mean and median total steps per day
+#### Mean and median total steps per day
+
+```r
 totalStepsPerDay[, list(mean = mean(totalSteps), median = median(totalSteps))]
 ```
 
@@ -134,7 +139,7 @@ totalStepsPerDay[, list(mean = mean(totalSteps), median = median(totalSteps))]
 
 
 ## What is the average daily activity pattern?
-In this section we are looking at the data summarized at the interval level
+#### Look at the data summarized at the interval level
 
 ```r
 avgStepsPerInterval <- activities.dt[, list(averageSteps = mean(steps, na.rm = TRUE)), 
@@ -163,12 +168,13 @@ g + labs(title = "Average Daily Activity Pattern", y = "Number of Steps")
 ![plot of chunk plot of average steps per interval](figure/plot_of_average_steps_per_interval.png) 
 
 
-We can now find the interval with the maximum average number of steps
+#### We can now find the interval with the maximum average number of steps
 
 ```r
 maxAverageNumberOfSteps <- max(avgStepsPerInterval$averageSteps)
 result <- avgStepsPerInterval[averageSteps == maxAverageNumberOfSteps, interval]
 ```
+
 
 The interval with the biggest average number of step is **835**
 
@@ -176,8 +182,9 @@ The interval with the biggest average number of step is **835**
 The number of missing steps in the dataset is : **2304**
 
 ### Filling missing values
-Strategy being used:  
-Take the previously calculated mean number of steps for a given interval to replace the missing values.
+**Strategy being used:**
+* Take the previously calculated mean number of steps for a given interval to replace the missing values.
+
 
 ```r
 nomissing.dt <- activities.dt
@@ -201,7 +208,7 @@ nomissing.dt[is.na(steps), `:=`(steps, as.integer(avgStepsPerInterval[avgStepsPe
 ```
 
 
-Let's now create the same histogram from above with the missing values filled.
+#### Let's now create the same histogram from above with the missing values filled.
 
 ```r
 totalStepsPerDay.noNA <- nomissing.dt[, list(totalSteps = sum(steps, na.rm = TRUE)), 
@@ -245,7 +252,10 @@ totalStepsPerDay.noNA[, list(mean = mean(totalSteps), median = median(totalSteps
 It appears that filling the missing values have removed a lot of the `0` and moved the mean and median to the right. 
 
 ## Are there differences in activity patterns between weekdays and weekends?
-First we create our WeekDayType factor to be added to the data.table without missing values. Then the mean is calculated for each WeekDayType - Interval combination. 
+
+* Create our WeekDayType factor to be added to the data.table without missing values. 
+* Calculate the mean for each WeekDayType - Interval combination. 
+
 
 ```r
 getWeekDayType <- function(date) {
@@ -274,7 +284,11 @@ nomissing.dt[, `:=`(weekDayType, as.factor(getWeekDayType(date)))]
 
 nomissing.avgSteps <- nomissing.dt[, list(averageSteps = mean(steps, na.rm = TRUE)), 
     by = list(weekDayType, interval)]
+```
 
+
+
+```r
 g <- ggplot(nomissing.avgSteps, aes(interval, averageSteps))
 g <- g + geom_line()
 g <- g + labs(title = "Differences in Daily Activity Between Weekdays and Weekends")
@@ -282,6 +296,6 @@ g <- g + labs(y = "Number of Steps")
 g + facet_grid(weekDayType ~ .)
 ```
 
-![plot of chunk prepare data.table](figure/prepare_data_table.png) 
+![plot of chunk display facet plot](figure/display_facet_plot.png) 
 
 
